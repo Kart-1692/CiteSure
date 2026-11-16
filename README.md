@@ -173,7 +173,7 @@ evidence-grounded-citation/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/<YOUR_USERNAME>/evidence-grounded-citation.git
+   git clone https://github.com/Kart-1692/CiteSure.git
    cd evidence-grounded-citation
    ```
 
