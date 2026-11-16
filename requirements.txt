@@ -1,0 +1,9 @@
+pymupdf>=1.24
+chromadb>=1.0
+sentence-transformers>=3.0
+requests>=2.31
+python-dotenv>=1.0
+streamlit>=1.36
+numpy
+matplotlib
+pytest

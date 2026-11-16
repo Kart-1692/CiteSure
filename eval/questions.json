@@ -1,0 +1,42 @@
+{
+  "_note": "gold = corpus keys of the paper(s) that contain the answer. Gold is at paper level only; no gold answer text is used. Replace this file and eval/corpus.json to evaluate on your own engineering papers.",
+  "ask": [
+    {"id": "a01", "question": "What are reflection tokens in Self-RAG and what does each type signal?", "gold": ["selfrag"]},
+    {"id": "a02", "question": "How does Self-RAG decide whether to retrieve passages for a given input?", "gold": ["selfrag"]},
+    {"id": "a03", "question": "What does the retrieval evaluator in Corrective Retrieval Augmented Generation do, and which actions can it trigger?", "gold": ["crag"]},
+    {"id": "a04", "question": "How does CRAG refine retrieved documents with its decompose-then-recompose step?", "gold": ["crag"]},
+    {"id": "a05", "question": "What are the three RAG paradigms described in the survey of retrieval-augmented generation for large language models?", "gold": ["ragsurvey"]},
+    {"id": "a06", "question": "Which shortcomings of naive RAG does advanced RAG try to address, and how?", "gold": ["ragsurvey"]},
+    {"id": "a07", "question": "How does the position of the relevant document inside a long input context change language model accuracy?", "gold": ["lostmiddle"]},
+    {"id": "a08", "question": "Which tasks were used to study how language models use long input contexts?", "gold": ["lostmiddle"]},
+    {"id": "a09", "question": "How does the ALCE benchmark measure citation quality?", "gold": ["alce"]},
+    {"id": "a10", "question": "Which datasets make up the ALCE benchmark?", "gold": ["alce"]},
+    {"id": "a11", "question": "What happens in the research stage and the revision stage of RARR?", "gold": ["rarr"]},
+    {"id": "a12", "question": "How does RARR measure whether a revised text preserves the original text?", "gold": ["rarr"]},
+    {"id": "a13", "question": "How does PaperQA gather evidence from scientific papers before it answers a question?", "gold": ["paperqa"]},
+    {"id": "a14", "question": "What is the LitQA benchmark and why was it created?", "gold": ["paperqa"]},
+    {"id": "a15", "question": "How does RAGAS compute the faithfulness of a generated answer?", "gold": ["ragas"]},
+    {"id": "a16", "question": "Which quality aspects of a RAG pipeline does RAGAS evaluate without human reference answers?", "gold": ["ragas"]},
+    {"id": "a17", "question": "What is an atomic fact in FActScore and how is the score computed from atomic facts?", "gold": ["factscore"]},
+    {"id": "a18", "question": "How does FActScore estimate factual precision automatically, without human annotators?", "gold": ["factscore"]},
+    {"id": "a19", "question": "How are citation recall and citation precision defined in the audit of generative search engines?", "gold": ["verifiability"]},
+    {"id": "a20", "question": "Which generative search engines were audited for verifiability, and what share of generated sentences was fully supported by citations?", "gold": ["verifiability"]},
+    {"id": "a21", "question": "What are the steps of the Chain-of-Verification method?", "gold": ["cove"]},
+    {"id": "a22", "question": "Why does Chain-of-Verification answer its verification questions without looking at the baseline response?", "gold": ["cove"]},
+    {"id": "a23", "question": "How is the synthetic training data for MiniCheck created?", "gold": ["minicheck"]},
+    {"id": "a24", "question": "What is the LLM-AggreFact benchmark and what does it unify?", "gold": ["minicheck"]},
+    {"id": "c01", "question": "How do Self-RAG and Corrective RAG differ in the way they judge retrieved passages?", "gold": ["selfrag", "crag"]},
+    {"id": "c02", "question": "Compare how the ALCE benchmark and the verifiability audit of generative search engines define citation precision.", "gold": ["alce", "verifiability"]},
+    {"id": "c03", "question": "How do RAGAS and FActScore differ in what they measure about a generated answer?", "gold": ["ragas", "factscore"]},
+    {"id": "c04", "question": "How do RARR and Chain-of-Verification differ in their use of external evidence?", "gold": ["rarr", "cove"]},
+    {"id": "c05", "question": "How do MiniCheck and FActScore check whether a statement is supported by a source document?", "gold": ["minicheck", "factscore"]},
+    {"id": "c06", "question": "What do the RAG survey and the Lost in the Middle study say about problems caused by long retrieved contexts?", "gold": ["ragsurvey", "lostmiddle"]}
+  ],
+  "unanswerable": [
+    {"id": "u01", "question": "What is the tensile strength of carbon-fibre reinforced polymer at 200 degrees Celsius?"},
+    {"id": "u02", "question": "What switching frequency is recommended for a 48 V gallium nitride buck converter?"},
+    {"id": "u03", "question": "Which battery chemistry gives the longest cycle life in grid-scale storage?"},
+    {"id": "u04", "question": "What is the minimum cover depth for reinforcement in marine concrete structures?"}
+  ],
+  "paper_tasks": ["selfrag", "crag", "lostmiddle", "alce", "ragas", "cove"]
+}

@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+store/
+papers/*.pdf
+eval/corpus/
+results/
+paper/*.aux
+paper/*.log
+paper/*.out
+.venv/
+.DS_Store
