@@ -1,7 +1,8 @@
 """Streamlit front end.   streamlit run app.py
 
+Evidence-Grounded Research Document Citation Engine.
 Upload PDFs in the sidebar, then use one of the three modes. Every statement shows its label,
-its numbered evidence, and the exact passage behind it; removed claims are listed, not hidden.
+its numbered evidence, and the exact passage behind it; removed claims are audited in a verification log.
 """
 from __future__ import annotations
 
@@ -16,421 +17,736 @@ from egc.render import NO_ANSWER, ieee_reference, numbering
 from egc.schema import Answer
 
 st.set_page_config(
-    page_title="Evidence-Grounded Research Assistant",
+    page_title="Evidence-Grounded Research Engine",
     page_icon="📑",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------
-# Theme & Visual Background Styles
+# Professional SaaS / Research Lab Design System
 # ---------------------------------------------------------
-THEMES = {
-    "🌌 Cosmic Aurora": {
-        "body_bg": (
-            "radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.32), transparent 60%), "
-            "radial-gradient(circle at 88% 25%, rgba(168, 85, 247, 0.22), transparent 45%), "
-            "radial-gradient(circle at 12% 75%, rgba(14, 165, 233, 0.20), transparent 50%), "
-            "radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.14), transparent 45%), "
-            "linear-gradient(180deg, #090d16 0%, #0d1322 50%, #06090e 100%)"
-        ),
-        "grid_color": "rgba(255, 255, 255, 0.05)",
-        "sidebar_bg": "rgba(13, 18, 30, 0.78)",
-        "card_bg": "rgba(255, 255, 255, 0.035)",
-        "card_hover_border": "rgba(99, 102, 241, 0.5)",
-        "border_color": "rgba(255, 255, 255, 0.09)",
-        "text_color": "#f1f5f9",
-        "muted_color": "#94a3b8",
-        "accent": "#6366f1",
-        "header_grad": "linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #a5b4fc 100%)",
-        "badge_border": "rgba(99, 102, 241, 0.35)",
-        "badge_bg": "rgba(99, 102, 241, 0.15)",
-        "badge_color": "#a5b4fc",
-        "input_bg": "rgba(15, 23, 42, 0.65)",
-    },
-    "🪐 Deep Space Slate": {
-        "body_bg": (
-            "radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 65%), "
-            "radial-gradient(circle at 90% 80%, rgba(30, 41, 59, 0.4), transparent 50%), "
-            "linear-gradient(180deg, #090c15 0%, #0e1424 50%, #070910 100%)"
-        ),
-        "grid_color": "rgba(255, 255, 255, 0.03)",
-        "sidebar_bg": "rgba(10, 14, 26, 0.82)",
-        "card_bg": "rgba(255, 255, 255, 0.03)",
-        "card_hover_border": "rgba(56, 189, 248, 0.45)",
-        "border_color": "rgba(255, 255, 255, 0.07)",
-        "text_color": "#f1f5f9",
-        "muted_color": "#94a3b8",
-        "accent": "#38bdf8",
-        "header_grad": "linear-gradient(135deg, #ffffff 0%, #94a3b8 100%)",
-        "badge_border": "rgba(56, 189, 248, 0.35)",
-        "badge_bg": "rgba(56, 189, 248, 0.15)",
-        "badge_color": "#7dd3fc",
-        "input_bg": "rgba(14, 20, 36, 0.7)",
-    },
-    "⚡ Emerald Cyber": {
-        "body_bg": (
-            "radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.24), transparent 45%), "
-            "radial-gradient(circle at 10% 80%, rgba(6, 182, 212, 0.20), transparent 45%), "
-            "radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08), transparent 60%), "
-            "linear-gradient(180deg, #040e0c 0%, #081a17 50%, #030807 100%)"
-        ),
-        "grid_color": "rgba(52, 211, 153, 0.07)",
-        "sidebar_bg": "rgba(6, 17, 15, 0.82)",
-        "card_bg": "rgba(16, 185, 129, 0.04)",
-        "card_hover_border": "rgba(16, 185, 129, 0.5)",
-        "border_color": "rgba(52, 211, 153, 0.15)",
-        "text_color": "#ecfdf5",
-        "muted_color": "#6ee7b7",
-        "accent": "#10b981",
-        "header_grad": "linear-gradient(135deg, #ffffff 0%, #a7f3d0 50%, #34d399 100%)",
-        "badge_border": "rgba(16, 185, 129, 0.35)",
-        "badge_bg": "rgba(16, 185, 129, 0.15)",
-        "badge_color": "#6ee7b7",
-        "input_bg": "rgba(7, 26, 22, 0.7)",
-    },
-    "📄 Paper Clean (Light)": {
-        "body_bg": (
-            "radial-gradient(circle at 50% -10%, rgba(99, 102, 241, 0.1), transparent 60%), "
-            "radial-gradient(circle at 85% 75%, rgba(203, 213, 225, 0.5), transparent 45%), "
-            "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)"
-        ),
-        "grid_color": "rgba(0, 0, 0, 0.04)",
-        "sidebar_bg": "rgba(248, 250, 252, 0.88)",
-        "card_bg": "rgba(255, 255, 255, 0.85)",
-        "card_hover_border": "rgba(99, 102, 241, 0.45)",
-        "border_color": "rgba(0, 0, 0, 0.08)",
-        "text_color": "#0f172a",
-        "muted_color": "#64748b",
-        "accent": "#4f46e5",
-        "header_grad": "linear-gradient(135deg, #0f172a 0%, #334155 100%)",
-        "badge_border": "rgba(79, 70, 229, 0.25)",
-        "badge_bg": "rgba(79, 70, 229, 0.1)",
-        "badge_color": "#4338ca",
-        "input_bg": "#ffffff",
-    },
+CUSTOM_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    --bg-main: #0b0f17;
+    --bg-surface: #111827;
+    --bg-surface-elevated: #1a2234;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-focus: #3b82f6;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
 }
 
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
 
-def apply_theme_css(theme_name: str) -> None:
-    t = THEMES.get(theme_name, THEMES["🌌 Cosmic Aurora"])
-    css = f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+.stApp {
+    background-color: #0b0f17 !important;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.07) 0px, transparent 45%),
+        radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.05) 0px, transparent 45%);
+    background-attachment: fixed !important;
+    color: #f8fafc !important;
+}
 
-    /* Global Base */
-    html, body, [class*="css"] {{
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }}
+/* Clean Header Navbar */
+.egc-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    margin-bottom: 22px;
+}
+.egc-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.egc-logo {
+    font-size: 24px;
+    background: rgba(37, 99, 235, 0.15);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    padding: 6px 10px;
+    border-radius: 8px;
+    line-height: 1;
+}
+.egc-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.egc-subtitle {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-top: 3px;
+}
+.egc-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #94a3b8;
+}
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
 
-    /* Main Container & Background */
-    .stApp {{
-        background: {t["body_bg"]} !important;
-        background-attachment: fixed !important;
-        color: {t["text_color"]} !important;
-    }}
+/* Metric Cards */
+.metric-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 14px 18px;
+    transition: all 0.15s ease;
+}
+.metric-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: #141d2e;
+}
+.metric-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+.metric-val {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 4px;
+    line-height: 1;
+}
+.metric-sub {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #94a3b8;
+}
+.text-success { color: #34d399 !important; }
+.text-danger { color: #f87171 !important; }
+.text-info { color: #38bdf8 !important; }
+.text-primary { color: #60a5fa !important; }
 
-    /* High-tech ambient background micro-grid */
-    .stApp::before {{
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background-image: radial-gradient({t["grid_color"]} 1px, transparent 1px);
-        background-size: 32px 32px;
-        pointer-events: none;
-        z-index: 0;
-    }}
+/* Statement Cards */
+.statement-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #3b82f6;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    transition: background 0.15s ease;
+}
+.statement-card:hover {
+    background: #141c2c;
+    border-color: rgba(255, 255, 255, 0.14);
+}
+.statement-card.card-finding {
+    border-left-color: #10b981;
+}
+.statement-card.card-limitation {
+    border-left-color: #ef4444;
+}
+.statement-card.card-interpretation {
+    border-left-color: #f59e0b;
+}
+.statement-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.statement-body {
+    font-size: 0.96rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+}
+.statement-legend {
+    font-size: 0.82rem;
+    color: #64748b;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin: 14px 0 20px 0;
+}
 
-    /* Glassmorphism Sidebar */
-    [data-testid="stSidebar"] {{
-        background: {t["sidebar_bg"]} !important;
-        backdrop-filter: blur(18px) saturate(180%);
-        -webkit-backdrop-filter: blur(18px) saturate(180%);
-        border-right: 1px solid {t["border_color"]} !important;
-    }}
+/* Badges */
+.egc-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+.badge-finding {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.badge-limitation {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.badge-interpretation {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
 
-    /* Metrics Cards */
-    div[data-testid="stMetric"] {{
-        background: {t["card_bg"]} !important;
-        border: 1px solid {t["border_color"]} !important;
-        border-radius: 14px !important;
-        padding: 16px 20px !important;
-        backdrop-filter: blur(14px) !important;
-        -webkit-backdrop-filter: blur(14px) !important;
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25) !important;
-        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
-    }}
-    div[data-testid="stMetric"]:hover {{
-        transform: translateY(-2px);
-        border-color: {t["card_hover_border"]} !important;
-        box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.35) !important;
-    }}
-    div[data-testid="stMetric"] label {{
-        font-size: 0.85rem !important;
-        font-weight: 500 !important;
-        color: {t["muted_color"]} !important;
-    }}
-    div[data-testid="stMetric"] [data-testid="stMetricValue"] {{
-        font-size: 1.65rem !important;
-        font-weight: 700 !important;
-        color: {t["text_color"]} !important;
-    }}
+/* Citation Pill */
+.cite-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-left: 4px;
+    background: rgba(59, 130, 246, 0.14);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.32);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
 
-    /* Modern Styled Tabs */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
-        background-color: {t["card_bg"]};
-        padding: 6px;
-        border-radius: 12px;
-        border: 1px solid {t["border_color"]};
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        border-radius: 8px !important;
-        padding: 8px 18px !important;
-        font-weight: 500 !important;
-        border: none !important;
-        color: {t["muted_color"]} !important;
-        transition: all 0.2s ease !important;
-    }}
-    .stTabs [data-baseweb="tab"]:hover {{
-        color: {t["text_color"]} !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(139, 92, 246, 0.22) 100%) !important;
-        border: 1px solid {t["accent"]} !important;
-        color: {t["text_color"]} !important;
-        font-weight: 600 !important;
-    }}
+/* Evidence Box */
+.evidence-box {
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.28);
+    border-radius: 6px;
+    border-left: 2px solid #3b82f6;
+    margin-top: 8px;
+}
+.evidence-meta {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.evidence-text {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+}
+.evidence-highlight {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fef08a;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border-bottom: 2px solid #f59e0b;
+}
 
-    /* Expanders */
-    .streamlit-expanderHeader {{
-        background-color: {t["card_bg"]} !important;
-        border-radius: 10px !important;
-        border: 1px solid {t["border_color"]} !important;
-        transition: all 0.2s ease !important;
-        font-weight: 500 !important;
-    }}
-    .streamlit-expanderHeader:hover {{
-        border-color: {t["accent"]} !important;
-        background-color: rgba(255, 255, 255, 0.05) !important;
-    }}
+/* Audit / Removed Cards */
+.audit-note {
+    font-size: 0.86rem;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+.removed-card {
+    background: rgba(239, 68, 68, 0.04);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-left: 3px solid #ef4444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+.removed-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+.removed-reason {
+    font-size: 0.78rem;
+    color: #fca5a5;
+    font-weight: 500;
+}
+.removed-text {
+    font-size: 0.92rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
 
-    /* Inputs, Selects & Textareas */
-    .stTextArea textarea, .stTextInput input, .stSelectbox div[data-baseweb="select"] > div {{
-        background-color: {t["input_bg"]} !important;
-        border: 1px solid {t["border_color"]} !important;
-        border-radius: 10px !important;
-        color: {t["text_color"]} !important;
-        font-size: 0.95rem !important;
-        transition: all 0.2s ease !important;
-    }}
-    .stTextArea textarea:focus, .stTextInput input:focus {{
-        border-color: {t["accent"]} !important;
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
-    }}
+/* Reference items */
+.reference-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #cbd5e1;
+}
+.ref-num {
+    font-weight: 700;
+    color: #60a5fa;
+    font-family: 'JetBrains Mono', monospace;
+}
 
-    /* Buttons */
-    .stButton button[kind="primary"], .stButton button[type="primary"] {{
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
-        border-radius: 9px !important;
-        font-weight: 600 !important;
-        padding: 0.5rem 1.4rem !important;
-        transition: all 0.25s ease !important;
-    }}
-    .stButton button[kind="primary"]:hover, .stButton button[type="primary"]:hover {{
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6) !important;
-    }}
-    .stButton button:not([kind="primary"]):not([type="primary"]) {{
-        background: {t["card_bg"]} !important;
-        border: 1px solid {t["border_color"]} !important;
-        color: {t["text_color"]} !important;
-        border-radius: 9px !important;
-        font-weight: 500 !important;
-        transition: all 0.2s ease !important;
-    }}
-    .stButton button:not([kind="primary"]):not([type="primary"]):hover {{
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: {t["accent"]} !important;
-        transform: translateY(-1px) !important;
-    }}
+/* Suggested Queries */
+.prompt-chips-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    margin-top: 10px;
+}
 
-    /* Quote Highlight */
-    mark {{
-        background: linear-gradient(120deg, rgba(245, 158, 11, 0.28) 0%, rgba(234, 179, 8, 0.28) 100%) !important;
-        color: #fef08a !important;
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
-        border-bottom: 2px solid #eab308 !important;
-    }}
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background-color: #0c1017 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.sidebar-header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.sidebar-sub {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-bottom: 16px;
+}
 
-    /* Code Tags & Marks */
-    code {{
-        background: rgba(99, 102, 241, 0.15) !important;
-        color: #c7d2fe !important;
-        border: 1px solid rgba(99, 102, 241, 0.3) !important;
-        border-radius: 5px !important;
-        padding: 1px 6px !important;
-        font-size: 0.85em !important;
-    }}
-    </style>
-    """
-    st.markdown(css, unsafe_allow_html=True)
+/* Baseline Mode */
+.baseline-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.84rem;
+    color: #fde68a;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+.baseline-stmt {
+    font-size: 0.93rem;
+    color: #cbd5e1;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+.cite-pill-plain {
+    display: inline-block;
+    padding: 1px 5px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: monospace;
+}
+.reference-item-plain {
+    font-size: 0.84rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+}
 
+/* Form Inputs & Buttons */
+.stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
+    background: #111620 !important;
+    border: 1px solid #232d3f !important;
+    border-radius: 8px !important;
+    color: #f1f5f9 !important;
+    font-size: 0.92rem !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
 
-def render_header(theme_name: str) -> None:
-    t = THEMES.get(theme_name, THEMES["🌌 Cosmic Aurora"])
-    st.markdown(
-        f"""
-        <div style="margin-bottom: 1.75rem; padding: 1.25rem 1.6rem; background: {t['card_bg']}; border: 1px solid {t['border_color']}; border-radius: 16px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
-            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: {t['badge_bg']}; border: 1px solid {t['badge_border']}; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; color: {t['badge_color']}; margin-bottom: 0.75rem;">
-                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e;"></span>
-                Evidence-Grounded Intelligence • Zero Hallucination
-            </div>
-            <h1 style="background: {t['header_grad']}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 0.5rem 0; font-weight: 800; font-size: 2.2rem; letter-spacing: -0.025em;">
-                📑 Evidence-Grounded Research Assistant
-            </h1>
-            <p style="color: {t['muted_color']}; font-size: 0.95rem; line-height: 1.5; margin: 0; max-width: 880px;">
-                Every factual statement is anchored to an exact passage of an uploaded research paper and verified. Statements that fail verification are automatically removed.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+.stButton button {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 0.88rem !important;
+    padding: 0.45rem 1.1rem !important;
+    transition: all 0.15s ease !important;
+}
+.stButton button[kind="primary"], .stButton button[type="primary"] {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #3b82f6 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+.stButton button[kind="primary"]:hover, .stButton button[type="primary"]:hover {
+    background: #1d4ed8 !important;
+    border-color: #60a5fa !important;
+}
+.stButton button:not([kind="primary"]):not([type="primary"]) {
+    background: #161d2b !important;
+    border: 1px solid #243044 !important;
+    color: #cbd5e1 !important;
+}
+.stButton button:not([kind="primary"]):not([type="primary"]):hover {
+    background: #1e293b !important;
+    border-color: #384964 !important;
+    color: #ffffff !important;
+}
 
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 4px;
+    background-color: #111622;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid #202b3d;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 6px !important;
+    padding: 7px 16px !important;
+    font-weight: 500 !important;
+    font-size: 0.88rem !important;
+    color: #94a3b8 !important;
+    border: none !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Expanders */
+.streamlit-expanderHeader {
+    background: #111827 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+}
+.streamlit-expanderHeader:hover {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+[data-testid="stExpanderDetails"] {
+    background: #0d121c !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    padding: 14px !important;
+}
+</style>
+"""
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 UPLOADS = Path("papers")
 COLOR = {"finding": "green", "limitation": "red", "interpretation": "orange"}
 NAME = {"finding": "Finding", "limitation": "Limitation", "interpretation": "Interpretation"}
 
 
-@st.cache_resource(show_spinner="Loading the index and the embedding model...")
+@st.cache_resource(show_spinner="Loading index and embedding model...")
 def get_engine() -> Engine:
     return Engine(Settings())
+
+
+def render_header(paper_count: int, chunk_count: int) -> None:
+    st.markdown(
+        f"""
+        <div class="egc-navbar">
+            <div class="egc-brand">
+                <div class="egc-logo">📑</div>
+                <div>
+                    <div class="egc-title">Evidence-Grounded Research Engine</div>
+                    <div class="egc-subtitle">Zero-Hallucination Retrieval, Attribution & Quote-Anchored Verification</div>
+                </div>
+            </div>
+            <div class="egc-status-pill">
+                <span class="status-dot"></span>
+                <span>Hybrid Index Active • <b>{paper_count}</b> Papers ({chunk_count} Chunks)</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def show_answer(ans: Answer) -> None:
     if ans.insufficient and not ans.statements:
         st.warning(NO_ANSWER)
-    else:
-        ev, ref = numbering(ans)
-        by_tag = {p.tag: p for p in ans.passages}
-        cols = st.columns(4)
-        cols[0].metric("Statements kept", len(ans.statements))
-        cols[1].metric("Removed by verification", len(ans.removed))
-        cols[2].metric("LLM calls", ans.llm_calls)
-        cols[3].metric("Seconds", ans.timings.get("total", 0))
-        heading = None
-        for st_ in ans.statements:
-            if st_.heading and st_.heading != heading:
-                heading = st_.heading
-                st.markdown(f"#### {heading}")
-            marks = " ".join(f"`[{ev[t]}]`" for t in st_.cites if t in ev)
-            st.markdown(f":{COLOR[st_.label]}[**{NAME[st_.label]}**]  {st_.text} {marks}")
-        st.caption("Finding = stated by the paper.  Limitation = a limit the paper itself states.  "
-                   "Interpretation = the system's own reading, not stated by the paper.")
-        st.markdown("##### Evidence")
-        quotes = {s.tag: s.quote for x in ans.statements for s in x.support if s.quote}
-        for tag, n in ev.items():
-            p = by_tag[tag]
-            with st.expander(f"[{n}]  {p.paper.short()} · {p.chunk.pages} · {p.chunk.section or 'n/a'}"):
-                text, quote = html.escape(p.chunk.text), html.escape(quotes.get(tag, ""))
-                if quote and quote in text:
-                    text = text.replace(quote, f"<mark>{quote}</mark>")
-                st.markdown(text, unsafe_allow_html=True)
-                st.caption(f"{p.paper.title} · chunk {p.chunk.chunk_id}")
-        st.markdown("##### References")
-        papers = {p.paper.paper_id: p.paper for p in ans.passages}
-        for pid, n in ref.items():
-            st.markdown(f"{n}. {ieee_reference(papers[pid])}")
+        return
+
+    ev, ref = numbering(ans)
+    by_tag = {p.tag: p for p in ans.passages}
+
+    # Metric Banner
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Verified Statements</div>
+            <div class="metric-val text-success">{len(ans.statements)} <span class="metric-sub">kept</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Audit Filtered</div>
+            <div class="metric-val text-danger">{len(ans.removed)} <span class="metric-sub">purged</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Pipeline LLM Calls</div>
+            <div class="metric-val text-info">{ans.llm_calls} <span class="metric-sub">calls</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Execution Latency</div>
+            <div class="metric-val text-primary">{ans.timings.get('total', 0):.2f}s</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Statements Section
+    st.markdown("#### 📋 Verified Statements")
+    heading = None
+    for st_ in ans.statements:
+        if st_.heading and st_.heading != heading:
+            heading = st_.heading
+            st.markdown(f"##### {heading}")
+
+        badge_class = f"badge-{st_.label}"
+        badge_name = NAME.get(st_.label, st_.label.title())
+        cite_html = "".join([f'<span class="cite-pill">[{ev[t]}]</span>' for t in st_.cites if t in ev])
+
+        st.markdown(f"""
+        <div class="statement-card card-{st_.label}">
+            <div class="statement-header">
+                <span class="egc-badge {badge_class}">{badge_name}</span>
+            </div>
+            <div class="statement-body">{html.escape(st_.text)} {cite_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="statement-legend">
+            <b>Taxonomy:</b> &nbsp;
+            <span class="egc-badge badge-finding">Finding</span> = Stated by the authors in the paper &nbsp;•&nbsp; 
+            <span class="egc-badge badge-limitation">Limitation</span> = Limitation explicitly noted by the paper &nbsp;•&nbsp; 
+            <span class="egc-badge badge-interpretation">Interpretation</span> = System synthesis / inference
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Evidence Drawer / Inspector
+    st.markdown("#### 🔍 Cited Evidence & Passages")
+    quotes = {s.tag: s.quote for x in ans.statements for s in x.support if s.quote}
+    for tag, n in ev.items():
+        p = by_tag[tag]
+        with st.expander(f"[{n}] {p.paper.short()} · Pages: {p.chunk.pages} · Section: {p.chunk.section or 'n/a'}"):
+            text = html.escape(p.chunk.text)
+            quote = html.escape(quotes.get(tag, ""))
+            if quote and quote in text:
+                text = text.replace(quote, f'<mark class="evidence-highlight">{quote}</mark>')
+            st.markdown(f"""
+            <div class="evidence-box">
+                <div class="evidence-meta">Source: <b>{html.escape(p.paper.title)}</b> · Chunk ID: {p.chunk.chunk_id}</div>
+                <div class="evidence-text">{text}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Removed Statements (Audit Trail)
     if ans.removed:
-        with st.expander(f"Removed by verification ({len(ans.removed)})"):
-            for s in ans.removed:
-                st.markdown(f"- ~~{s.text}~~  \n  _{NAME[s.label]} · {s.reason}_")
+        st.markdown("#### 🛡️ Verification Audit Trail (Rejected Claims)")
+        st.markdown("""
+        <div class="audit-note">
+            The following candidate statements were generated during initial drafting but <b>failed rigorous quote-anchored verification</b> against the source passages. They were purged from the answer to prevent hallucination.
+        </div>
+        """, unsafe_allow_html=True)
+        for s in ans.removed:
+            badge_class = f"badge-{s.label}"
+            badge_name = NAME.get(s.label, s.label.title())
+            st.markdown(f"""
+            <div class="removed-card">
+                <div class="removed-header">
+                    <span class="egc-badge {badge_class}">{badge_name}</span>
+                    <span class="removed-reason">❌ Rejection Reason: {html.escape(s.reason)}</span>
+                </div>
+                <div class="removed-text"><s>{html.escape(s.text)}</s></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Bibliographic References
+    st.markdown("#### 📚 Bibliographic References (IEEE Format)")
+    papers = {p.paper.paper_id: p.paper for p in ans.passages}
+    for pid, n in ref.items():
+        st.markdown(f"""
+        <div class="reference-item">
+            <span class="ref-num">[{n}]</span>
+            <span class="ref-text">{ieee_reference(papers[pid])}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def show_baseline(out: dict) -> None:
-    st.caption("Plain LLM, no documents. Its references are written from memory and are not checked.")
+    st.markdown("""
+    <div class="baseline-warning">
+        ⚠️ <b>Standard Unchecked LLM Output</b><br>
+        Generated from parametric memory without document retrieval or quote-anchored verification. References below may contain fabricated or inaccurate metadata.
+    </div>
+    """, unsafe_allow_html=True)
     for s in out["statements"]:
-        st.markdown(f"- {s['text']} " + " ".join(f"`[{n}]`" for n in s["refs"]))
+        refs = " ".join([f'<span class="cite-pill-plain">[{n}]</span>' for n in s["refs"]])
+        st.markdown(f'<div class="baseline-stmt">• {html.escape(s["text"])} {refs}</div>', unsafe_allow_html=True)
+    st.markdown("##### Parametric References")
     for r in out["references"]:
-        st.markdown(f"{r['n']}. {r['authors']}, \u201c{r['title']},\u201d {r['venue']}, {r['year'] or 'n.d.'}.")
+        st.markdown(f'<div class="reference-item-plain">{r["n"]}. {html.escape(r["authors"])}, “{html.escape(r["title"])}”, {html.escape(r["venue"])}, {r["year"] or "n.d."}.</div>', unsafe_allow_html=True)
 
 
 def run(mode: str, compare: bool, **kw) -> None:
     engine = get_engine()
     try:
-        with st.spinner("Retrieving, generating, verifying..."):
+        with st.spinner("Retrieving, generating, and verifying evidence..."):
             ans = {"ask": engine.ask, "explain": engine.explain, "summarize": engine.summarize}[mode](**kw)
         if compare:
             left, right = st.columns(2)
             with left:
-                st.subheader("Evidence-grounded")
+                st.subheader("🛡️ Evidence-Grounded (Verified)")
                 show_answer(ans)
             with right:
-                st.subheader("Plain LLM")
-                with st.spinner("Asking the plain LLM..."):
+                st.subheader("⚠️ Plain LLM (Baseline)")
+                with st.spinner("Querying ungrounded model..."):
                     show_baseline(engine.baseline(mode, question=kw.get("question", ""), paper_key=kw.get("paper_key", "")))
         else:
             show_answer(ans)
-    except Exception as exc:  # shown to the user instead of a stack trace
+    except Exception as exc:
         st.error(f"{type(exc).__name__}: {exc}")
 
 
 engine = get_engine()
+all_papers = engine.papers()
+total_chunks = sum(p.n_chunks for p in all_papers)
+
+# ---------------------------------------------------------
+# Sidebar: Paper Library & Knowledge Base
+# ---------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🎨 Appearance")
-    bg_theme = st.selectbox(
-        "Background Theme",
-        list(THEMES.keys()),
-        index=0,
-        help="Select a background visual style for the workspace.",
-    )
-    apply_theme_css(bg_theme)
+    st.markdown('<div class="sidebar-header">📚 Research Paper Library</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="sidebar-sub">{len(all_papers)} papers indexed • {total_chunks} total chunks</div>', unsafe_allow_html=True)
+
+    with st.expander("➕ Ingest New Paper (PDF)", expanded=False):
+        files = st.file_uploader("Upload PDF Documents", type="pdf", accept_multiple_files=True)
+        enrich = st.checkbox("Query online metadata (Crossref / arXiv)", value=False)
+        if files and st.button("Start Ingestion", type="primary", use_container_width=True):
+            UPLOADS.mkdir(exist_ok=True)
+            for f in files:
+                path = UPLOADS / f.name
+                path.write_bytes(f.getbuffer())
+                try:
+                    paper = engine.ingest(path, enrich=enrich)
+                    st.success(f"Indexed: {paper.title[:50]}... ({paper.n_chunks} chunks)")
+                except Exception as exc:
+                    st.error(f"{f.name}: {exc}")
+            st.rerun()
+
+    # Paper Filter
+    filter_q = st.text_input("Filter indexed papers", placeholder="Search title or authors...", label_visibility="collapsed")
+    filtered_papers = [p for p in all_papers if filter_q.lower() in p.title.lower() or any(filter_q.lower() in a.lower() for a in p.authors)] if filter_q else all_papers
+
     st.markdown("---")
-    st.header("Papers")
-    files = st.file_uploader("Add research papers (PDF)", type="pdf", accept_multiple_files=True)
-    enrich = st.checkbox("Look up title, authors and year online (Crossref / arXiv)", value=False)
-    if files and st.button("Ingest", type="primary"):
-        UPLOADS.mkdir(exist_ok=True)
-        for f in files:
-            path = UPLOADS / f.name
-            path.write_bytes(f.getbuffer())
-            try:
-                paper = engine.ingest(path, enrich=enrich)
-                st.success(f"{paper.title[:60]} ({paper.n_chunks} chunks)")
-            except Exception as exc:
-                st.error(f"{f.name}: {exc}")
-    for paper in engine.papers():
-        with st.expander(paper.title[:70]):
-            st.write(f"**Authors:** {', '.join(paper.authors) or 'not found'}")
-            st.write(f"**Year:** {paper.year or 'not found'}  \n**DOI:** {paper.doi or 'not found'}")
-            st.caption(f"{paper.n_pages} pages · {paper.n_chunks} chunks · metadata from {paper.meta_source} · id {paper.paper_id}")
-            if st.button("Remove", key=f"rm-{paper.paper_id}"):
+    st.caption(f"INDEXED PAPERS ({len(filtered_papers)})")
+
+    for paper in filtered_papers:
+        with st.expander(f"{paper.short()}: {paper.title[:55]}..."):
+            st.markdown(f"**Title:** {paper.title}")
+            st.markdown(f"**Authors:** {', '.join(paper.authors) or 'Not found'}")
+            st.markdown(f"**Year:** {paper.year or 'n.d.'} &nbsp;|&nbsp; **DOI:** {paper.doi or 'None'}")
+            st.caption(f"{paper.n_pages} pages · {paper.n_chunks} chunks · Source: {paper.meta_source}")
+            if st.button("Delete Paper", key=f"del-{paper.paper_id}", use_container_width=True):
                 engine.store.remove_paper(paper.paper_id)
                 st.rerun()
-    compare = st.checkbox("Also show the plain LLM answer", value=False)
 
-render_header(bg_theme)
-papers = engine.papers()
-if not papers:
-    st.info("Add one or more research papers in the sidebar to begin.")
+    st.markdown("---")
+    compare = st.checkbox("Compare with Plain LLM (Baseline)", value=False, help="Runs side-by-side comparison against an ungrounded LLM to demonstrate hallucination reduction.")
+
+# ---------------------------------------------------------
+# Main Workspace
+# ---------------------------------------------------------
+render_header(len(all_papers), total_chunks)
+
+if not all_papers:
+    st.info("No research papers in the database. Upload papers in the sidebar to begin.")
 else:
-    titles = {p.paper_id: f"{p.title[:90]} ({p.short()})" for p in papers}
-    ask_tab, explain_tab, summary_tab = st.tabs(["Ask Research", "Explain Paper", "Summarize Paper"])
+    titles = {p.paper_id: f"{p.title[:85]}... ({p.short()})" for p in all_papers}
+    ask_tab, explain_tab, summary_tab = st.tabs(["🔍 Ask Research", "📖 Explain Paper", "📝 Summarize Paper"])
+
     with ask_tab:
-        question = st.text_area("Question across all uploaded papers", height=80)
-        if st.button("Answer", key="go-ask") and question.strip():
+        if "ask_input" not in st.session_state:
+            st.session_state["ask_input"] = ""
+
+        # Suggested Queries Chips
+        st.markdown('<div class="prompt-chips-label">💡 Suggested Research Queries:</div>', unsafe_allow_html=True)
+        col_q1, col_q2, col_q3 = st.columns(3)
+        with col_q1:
+            if st.button("⚡ Hybrid Search vs Dense Search", use_container_width=True):
+                st.session_state["ask_input"] = "How does hybrid retrieval improve search accuracy over dense vector or BM25 alone?"
+        with col_q2:
+            if st.button("🛡️ LLM Hallucinations in Research", use_container_width=True):
+                st.session_state["ask_input"] = "What are the primary causes of hallucination and fabricated citations in large language models?"
+        with col_q3:
+            if st.button("🔍 Quote Anchoring Mechanism", use_container_width=True):
+                st.session_state["ask_input"] = "How does quote anchoring verify that a citation actually supports its claim?"
+
+        question = st.text_area(
+            "Research Query across All Papers",
+            value=st.session_state.get("ask_input", ""),
+            height=90,
+            placeholder="Type your technical question here (e.g. How does reciprocal rank fusion combine rankings?)...",
+        )
+
+        col_btn, _ = st.columns([1, 4])
+        with col_btn:
+            ask_pressed = st.button("Run Verified Search", type="primary", use_container_width=True, key="go-ask")
+
+        if ask_pressed and question.strip():
             run("ask", compare, question=question.strip())
+
     with explain_tab:
-        pid = st.selectbox("Paper", list(titles), format_func=titles.get, key="explain-paper")
-        focus = st.text_input("Focus (optional)", placeholder="e.g. the loss function, the experimental setup")
-        if st.button("Explain", key="go-explain"):
+        pid = st.selectbox("Select Research Paper", list(titles), format_func=titles.get, key="explain-paper")
+        focus = st.text_input("Technical Focus (Optional)", placeholder="e.g. loss formulation, dataset preparation, evaluation metrics")
+        col_btn2, _ = st.columns([1, 4])
+        with col_btn2:
+            explain_pressed = st.button("Explain Paper", type="primary", use_container_width=True, key="go-explain")
+
+        if explain_pressed:
             run("explain", compare, paper_key=pid, focus=focus.strip())
+
     with summary_tab:
-        pid2 = st.selectbox("Paper", list(titles), format_func=titles.get, key="summary-paper")
-        if st.button("Summarize", key="go-summary"):
+        pid2 = st.selectbox("Select Research Paper for Summary", list(titles), format_func=titles.get, key="summary-paper")
+        col_btn3, _ = st.columns([1, 4])
+        with col_btn3:
+            summary_pressed = st.button("Generate Structured Summary", type="primary", use_container_width=True, key="go-summary")
+
+        if summary_pressed:
             run("summarize", compare, paper_key=pid2)
